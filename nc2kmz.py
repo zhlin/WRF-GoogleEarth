@@ -6,7 +6,7 @@ kml files for Google Earth.   The base class ncEarth cannot be used on its own,
 it must be subclassed with certain functions overloaded to provide location and
 plotting that are specific to a model's output files.
 
-Requires matplotlib and Scientific python.
+Requires matplotlib and netCDF4 python modules.
 
 Use as follows:
 
@@ -32,7 +32,10 @@ Date: Dec 20, 2010
 
 from matplotlib import pylab
 import numpy as np
-from Scientific.IO import NetCDF
+try:
+    from netCDF4 import Dataset
+except:
+    from Scientific.IO.NetCDF import NetCDFFile as Dataset
 import cStringIO
 from datetime import datetime
 import zipfile
@@ -113,7 +116,7 @@ class ncEarth(object):
            filename : string NetCDF file to read
            hsize : optional, width of output images in inches'''
         
-        self.f=NetCDF.NetCDFFile(filename,'r')
+        self.f=Dataset(filename,'r')
         self.hsize=hsize
     
     def get_bounds(self):
@@ -147,7 +150,7 @@ class ncEarth(object):
         # create a string buffer to save the file
         im=cStringIO.StringIO()
         
-        pylab.savefig(im,format='png')
+        pylab.savefig(im,format='png',transparent=True)
         
         # return the buffer
         return im.getvalue()
@@ -282,16 +285,16 @@ class ncWRFFire(ncEarth):
         start=''
         end=''
         time=''
-        #g=NetCDF.NetCDFFile('wrfout_times','r')
+        g=self.f
         times=g.variables["Times"]
         if self.istep > 0:
             start=ncEarth.beginstr % \
                datetime.strptime(times[self.istep,:].tostring(),\
-                                     self.__class__.wrftimestr).isoformat()
+                                     self.__class__.wrftimestr).isoformat()+'Z'
         if self.istep < times.shape[0]-1:
             end=ncEarth.endstr % \
                datetime.strptime(times[self.istep+1,:].tostring(),\
-                                     self.__class__.wrftimestr).isoformat()
+                                     self.__class__.wrftimestr).isoformat()+'Z'
         if start is not '' or end is not '':
             time=ncEarth.timestr % {'begin':start,'end':end}
         return time
@@ -310,8 +313,8 @@ class ncWRFFire_mov(object):
            nstep : the number of frames to process (default all frames in the file)'''
         
         self.filename=filename
-        f=NetCDF.NetCDFFile(filename,'r')
-        g=NetCDF.NetCDFFile('wrfout_times','r')
+        f=Dataset(filename,'r')
+        g=f
         self.nstep=nstep
         if nstep is None:
             # in case nstep was not specified read the total number of time slices from the file
@@ -391,3 +394,13 @@ class ncWRFFire_mov(object):
         for img in imgs:
             z.write(img)
         z.close()
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) != 2:
+        print "Takes a WRF-Fire output file and writes fire.kmz."
+        print "usage: %s filename"%sys.argv[0]
+    else:
+        filename=sys.argv[1]
+        kmz=ncWRFFire_mov(filename)
+        kmz.write('FGRNHFX')
