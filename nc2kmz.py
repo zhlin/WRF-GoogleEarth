@@ -290,11 +290,11 @@ class ncWRFFire(ncEarth):
         if self.istep > 0:
             start=ncEarth.beginstr % \
                datetime.strptime(times[self.istep,:].tostring(),\
-                                     self.__class__.wrftimestr).isoformat()+'Z'
+                                     self.__class__.wrftimestr).isoformat()
         if self.istep < times.shape[0]-1:
             end=ncEarth.endstr % \
                datetime.strptime(times[self.istep+1,:].tostring(),\
-                                     self.__class__.wrftimestr).isoformat()+'Z'
+                                     self.__class__.wrftimestr).isoformat()
         if start is not '' or end is not '':
             time=ncEarth.timestr % {'begin':start,'end':end}
         return time
