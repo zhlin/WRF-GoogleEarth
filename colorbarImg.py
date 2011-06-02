@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 '''
 A script that dynamically generates log scaled color bar images from a NetCDF dataset for each step with data.
 
